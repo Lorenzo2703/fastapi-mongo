@@ -30,6 +30,22 @@ async def create_item(item: Dict):
 async def read_items():
     return await db_manager.read_items()
 
+@app.get("/score/")
+async def get_scores():
+    items=await db_manager.read_items()
+    count=len(items)
+    merged_result = {}
+
+
+    for d in items:
+        for key, sub_dict in d.items():
+            if key.split('-')[0] not in merged_result:
+                merged_result[key.split('-')[0]] = []
+            merged_result[key.split('-')[0]].append(sub_dict)
+
+    return merged_result
+    
+
 
 @app.get("/items/{item_id}")
 async def read_item(item_id: str):
@@ -53,12 +69,6 @@ async def delete_item(item_id: str):
         raise HTTPException(status_code=404, detail="Item not found")
     return "Item deleted successfully"
 
-@app.get("items/score")
-async def get_scores():
-    items=await db_manager.read_items()
-    rls=["trl",""]
-    for item in items:
-        print(item)
 
 
 
