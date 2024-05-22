@@ -7,6 +7,7 @@ from db import db_manager
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
+import re
 
 
 app = FastAPI()
@@ -33,10 +34,7 @@ async def read_items():
 @app.get("/score/")
 async def get_scores():
     items=await db_manager.read_items()
-    count=len(items)
     merged_result = {}
-
-
     for d in items:
         for key, sub_dict in d.items():
             if key.split('-')[0] not in merged_result:
@@ -44,7 +42,34 @@ async def get_scores():
             merged_result[key.split('-')[0]].append(sub_dict)
 
     return merged_result
+
+@app.get("/scoreAll/")
+async def get_scores():
+    items = await read_items()
+    merged_result = {}
+    for d in items:
+        for key, sub_dict in d.items():
+            base_key = key[:3]
+            if base_key not in merged_result:
+                merged_result[base_key] = []
+            merged_result[base_key].append(sub_dict)
     
+    atos = []
+    prevail = []
+
+    for key, sub_list in merged_result.items():
+        a = []
+        b = []
+
+        for values in sub_list:
+            a.append(values.get("Atos"))
+            b.append(values.get("Prevail"))
+
+        atos.append(a)
+        prevail.append(b)
+
+
+    return [atos,prevail]
 
 
 @app.get("/items/{item_id}")
