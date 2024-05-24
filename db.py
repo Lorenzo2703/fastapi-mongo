@@ -27,9 +27,15 @@ class DBManager:
             items.append(item)
         return items
     
-    async def update_item(self, item_id: ObjectId, item):
-        await self.db.items.update_one({"_id": item_id}, {"$set": item}, upsert=True)
-        return await self.read_item(item_id)
+    async def update_item(self, item):
+        # Update the first document in the 'scores' collection, or insert the item if no document is found
+        await self.db["scores"].find_one_and_update(
+            {},  
+            {"$set": item}, 
+            upsert=True  
+        )
+        return await self.db["scores"].find_one()  # Return the updated or inserted document
+
 
     async def delete_item(self, item_id: ObjectId) -> bool:
         result = await self.db.items.delete_one({"_id": item_id})

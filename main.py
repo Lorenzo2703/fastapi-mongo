@@ -1,13 +1,9 @@
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional
 from uuid import UUID, uuid4
 from db import db_manager
-from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
-import re
 
 
 app = FastAPI()
@@ -44,32 +40,61 @@ async def get_scores():
     return merged_result
 
 @app.get("/scoreAll/")
-async def get_scores():
+async def get_score_All():
     items = await read_items()
     merged_result = {}
     for d in items:
         for key, sub_dict in d.items():
-            base_key = key[:3]
+            base_key = key.split('-')[0]
             if base_key not in merged_result:
                 merged_result[base_key] = []
             merged_result[base_key].append(sub_dict)
     
-    atos = []
-    prevail = []
+    atos = {}
+    prevail = {}
+    astop = False
+    pstop = False
+    rlLvA = 0
+    rlLvP = 0
+    prev_key = None
 
     for key, sub_list in merged_result.items():
         a = []
         b = []
+      
 
         for values in sub_list:
-            a.append(values.get("Atos"))
-            b.append(values.get("Prevail"))
+            if isinstance(values, dict):   
+                a.append(values.get("Atos"))
+                b.append(values.get("Prevail"))
+            
+        if len(a) != 0:
+            atos[key]=(sum(a)/len(a))
+            if sum(a)/len(a)>2.9 and not astop:
+                if key[:3] != prev_key:  # Reset rlLvA when the key changes
+                    rlLvA = 0
+                rlLvA += 1
+                atos[key[:3]+"Lv"] = rlLvA
+            else:
+                astop = True
 
-        atos.append(a)
-        prevail.append(b)
+        
+        if len(b) != 0:
+            prevail[key]=sum(b)/len(b)
+            if sum(b)/len(b)>2.9 and not pstop:
+                if key[:3] != prev_key:  # Reset rlLvP when the key changes
+                    rlLvP = 0
+                rlLvP += 1
+                prevail[key[:3]+"Lv"] = rlLvP
+            else:
+                pstop = True
 
+        prev_key = key[:3]  # Update prev_key for the next iteration
 
-    return [atos,prevail]
+    # Insert into the database
+    await db_manager.update_item(item={"Atos": atos, "Prevail": prevail})
+    
+    return [atos, prevail]
 
 
 @app.get("/items/{item_id}")
