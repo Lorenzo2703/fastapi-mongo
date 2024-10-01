@@ -61,7 +61,7 @@ async def get_score_All():
     for key, sub_list in merged_result.items():
         a = []
         b = []
-      
+    
 
         for values in sub_list:
             if isinstance(values, dict):   
@@ -69,21 +69,29 @@ async def get_score_All():
                 b.append(values.get("Prevail"))
             
         if len(a) != 0:
-            atos[key]=(sum(a)/len(a))
-            if sum(a)/len(a)>2.9 and not astop:
-                if key[:3] != prev_key:  # Reset rlLvA when the key changes
-                    rlLvA = 0
+            avg_a = sum(a) / len(a)  # Calculate average once
+            atos[key] = avg_a
+
+            if key[:3] != prev_key:
+                rlLvA = 0
+                astop = False
+
+            if avg_a > 2.9 and not astop:
                 rlLvA += 1
-                atos[key[:3]+"Lv"] = rlLvA
+                atos[key[:3] + "Lv"] = rlLvA    
             else:
-                astop = True
+                astop = True   
 
         
         if len(b) != 0:
-            prevail[key]=sum(b)/len(b)
-            if sum(b)/len(b)>2.9 and not pstop:
-                if key[:3] != prev_key:  # Reset rlLvP when the key changes
-                    rlLvP = 0
+            avg_b = sum(b) / len(b)
+            prevail[key]=avg_b
+
+            if key[:3] != prev_key:  # Reset rlLvP when the key changes
+                rlLvP = 0
+                pstop = False
+
+            if avg_b>2.9 and not pstop:
                 rlLvP += 1
                 prevail[key[:3]+"Lv"] = rlLvP
             else:
